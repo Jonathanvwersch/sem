@@ -1,0 +1,39 @@
+.search-result-item {
+  display: flex;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.search-result-item .icon {
+  margin-right: 8px;
+}
+
+.search-result-item .label {
+  flex-grow: 1;
+}
+
+.search-result-item .description {
+  opacity: 0.7;
+  font-size: 0.9em;
+  margin-left: 8px;
+}
+
+.file-item {
+  font-weight: bold;
+}
+
+.vscode-dark .search-result-item {
+  color: #e0e0e0;
+}
+
+.vscode-dark .search-result-item .description {
+  color: #a0a0a0;
+}
+
+.vscode-light .search-result-item {
+  color: #333333;
+}
+
+.vscode-light .search-result-item .description {
+  color: #666666;
+}

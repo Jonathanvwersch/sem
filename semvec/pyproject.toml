@@ -1,0 +1,39 @@
+[tool.poetry]
+name = "core"
+version = "0.1.0"
+description = "Semantic code search"
+authors = ["Jonathan van Wersch <jonathanvwersch@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.12.5"
+sentence-transformers = "3.0.1"
+anthropic = "0.34.2"
+fastapi = "0.114.0"
+pydantic = "2.9.0"
+python-dotenv = "1.0.1"
+uvicorn = "^0.30.6"
+requests = "^2.32.3"
+aiolimiter = "^1.1.0"
+cachetools = "^5.5.0"
+aiohttp = "^3.10.5"
+pinecone-client = "^5.0.1"
+numpy = "1.26.4"
+faiss-cpu = "^1.8.0.post1"
+torch = "^2.4.1"
+transformers = "^4.44.2"
+einops = "^0.8.0"
+datasets = "^3.0.0"
+aiofiles = "^24.1.0"
+gitmatch = "^0.2.0"
+nltk = "^3.9.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.config]
+virtualenvs.in-project = true
+
+[tool.poetry.scripts]
+start = "core.main:main"

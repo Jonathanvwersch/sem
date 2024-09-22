@@ -1,0 +1,22 @@
+{
+  "python.defaultInterpreterPath": "/Users/code/Projects/sem/semvec/.venv/bin/python",
+  "python.pythonPath": "/Users/code/Projects/sem/semvec/.venv/bin/python",
+  "python.testing.cwd": "${workspaceFolder}",
+  "python.analysis.extraPaths": ["${workspaceFolder}/semvec"],
+  "python.autoComplete.extraPaths": ["${workspaceFolder}/semvec"],
+  "python.envFile": "${workspaceFolder}/.env",
+  "python.terminal.activateEnvironment": true,
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": true,
+  "python.formatting.provider": "black",
+  "editor.formatOnSave": true,
+  "[python]": {
+    "editor.formatOnSave": true
+  },
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/*/**": true,
+    "**/.venv/*/**": true
+  }
+}
