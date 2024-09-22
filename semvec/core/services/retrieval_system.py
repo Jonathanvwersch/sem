@@ -1,3 +1,4 @@
+import logging
 import os
 import numpy as np
 import faiss
@@ -30,12 +31,9 @@ class FAISSRetrievalSystem:
         batch_size = 32
         embeddings = []
 
-        print(f"Building index with {len(texts)} chunks")
-
         for i in range(0, len(texts), batch_size):
             batch = texts[i : i + batch_size]
             try:
-                print(f"Processing batch {i} to {i+len(batch)-1}")
                 tokenized_batch = self.tokenizer(
                     batch,
                     padding=True,
@@ -43,7 +41,6 @@ class FAISSRetrievalSystem:
                     max_length=512,
                     return_tensors="pt",
                 )
-                print(f"Tokenized batch shape: {tokenized_batch['input_ids'].shape}")
 
                 for j, sentence in enumerate(batch):
                     try:
@@ -53,18 +50,11 @@ class FAISSRetrievalSystem:
                         if sentence_embedding.ndim == 1:
                             sentence_embedding = sentence_embedding.reshape(1, -1)
                         embeddings.append(sentence_embedding)
-                        print(
-                            f"  Encoded item {i+j}, shape: {sentence_embedding.shape}"
-                        )
                     except Exception as e:
-                        print(f"  Error encoding item {i+j}: {str(e)}")
-                        print(f"  Problematic text: {sentence[:100]}...")
+                        logging.error(f"  Error encoding item {i+j}: {str(e)}")
 
             except Exception as e:
-                print(f"Error processing batch {i}: {str(e)}")
-                print("Problematic batch:")
-                for j, text in enumerate(batch):
-                    print(f"  Item {i+j}: {text[:100]}...")
+                logging.error(f"Error processing batch {i}: {str(e)}")
                 continue
 
         if not embeddings:
@@ -73,7 +63,6 @@ class FAISSRetrievalSystem:
             )
 
         embeddings = np.vstack(embeddings).astype(np.float32)
-        print(f"Final embeddings shape: {embeddings.shape}")
 
         dimension = embeddings.shape[1]
         n_clusters = min(100, len(embeddings) // 2)
@@ -81,8 +70,8 @@ class FAISSRetrievalSystem:
         self.index = faiss.IndexIVFFlat(quantizer, dimension, n_clusters)
 
         if len(embeddings) < n_clusters:
-            print(
-                f"Warning: Not enough data points ({len(embeddings)}) for IVF index. Using IndexFlatL2 instead."
+            logging.warning(
+                f"Not enough data points ({len(embeddings)}) for IVF index. Using IndexFlatL2 instead."
             )
             self.index = faiss.IndexFlatL2(dimension)
             self.index.add(embeddings)
@@ -90,21 +79,18 @@ class FAISSRetrievalSystem:
             self.index.train(embeddings)
             self.index.add(embeddings)
 
-        print("Index built successfully")
+        logging.info("Index built successfully")
 
     def save_index(self, identifier: str):
         try:
             os.makedirs(self.index_dir, exist_ok=True)
             index_filename = os.path.join(self.index_dir, f"{identifier}.index")
-            chunks_filename = os.path.join(self.index_dir, f"{identifier}.npy")
 
-            print(f"Saving index to {index_filename}")
             faiss.write_index(self.index, index_filename)
-            np.save(chunks_filename, self.chunks)
-            print(f"Index and chunks saved successfully to {self.index_dir}")
+            logging.info(f"Index and chunks saved successfully to {self.index_dir}")
             self.current_identifier = identifier
         except Exception as e:
-            print(f"Error saving index: {e}")
+            logging.error(f"Error saving index: {e}")
             raise
 
     def load_index(self, identifier: str):
@@ -112,7 +98,7 @@ class FAISSRetrievalSystem:
         index_filename = os.path.join(self.index_dir, f"{identifier}.index")
         chunks_filename = os.path.join(self.index_dir, f"{identifier}.npy")
 
-        print(f"Loading index from {index_filename}")
+        logging.info(f"Loading index from {index_filename}")
 
         if not os.path.exists(index_filename) or not os.path.exists(chunks_filename):
             raise FileNotFoundError(
@@ -122,20 +108,7 @@ class FAISSRetrievalSystem:
         self.index = faiss.read_index(index_filename)
         self.chunks = np.load(chunks_filename, allow_pickle=True)
         self.current_identifier = identifier
-        print(f"Index and chunks loaded successfully from {self.index_dir}")
-
-    def ensure_index_loaded(self, identifier: str):
-        if (
-            self.current_identifier != identifier
-            or not hasattr(self, "index")
-            or not hasattr(self, "chunks")
-        ):
-            try:
-                self.load_index(identifier)
-            except FileNotFoundError as e:
-                print(f"Error: {str(e)}")
-                print(f"No index found for repository: {identifier}")
-                raise
+        logging.info(f"Index and chunks loaded successfully from {self.index_dir}")
 
     def retrieve(self, query, top_k=5, similarity_threshold=0.1):
         if self.current_identifier is None:
@@ -151,23 +124,16 @@ class FAISSRetrievalSystem:
             )
 
         try:
-            print(f"Encoding query: {query}")
+            logging.info(f"Encoding query: {query}")
             tokenized_query = self.tokenizer(query, return_tensors="pt")
-            print(f"Tokenized query shape: {tokenized_query['input_ids'].shape}")
 
             query_embedding = self.model.encode(query, convert_to_tensor=True)
-            print(f"Query embedding shape: {query_embedding.shape}")
 
             if query_embedding.dim() == 1:
                 query_embedding = query_embedding.unsqueeze(0)
 
             query_embedding_np = query_embedding.cpu().numpy().astype(np.float32)
-            print(f"Query embedding numpy shape: {query_embedding_np.shape}")
-
             distances, indices = self.index.search(query_embedding_np, top_k * 2)
-            print(
-                f"Search results - distances shape: {distances.shape}, indices shape: {indices.shape}"
-            )
 
             results = []
             seen_files = {}
@@ -211,11 +177,13 @@ class FAISSRetrievalSystem:
                     score=details["score"],
                 )
                 results.append(result)
-            print(results)
+
+            logging.info(f"Found the following semantic matches: {results}")
+
             return results
 
         except Exception as e:
-            print(f"An error occurred during retrieval: {str(e)}")
+            logging.error(f"An error occurred during retrieval: {str(e)}")
             traceback.print_exc()
             return []
 

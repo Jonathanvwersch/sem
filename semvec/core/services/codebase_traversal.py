@@ -1,3 +1,4 @@
+import logging
 import os
 import gitmatch
 import aiofiles
@@ -267,9 +268,9 @@ async def traverse_codebase_from_path(repo_path: str) -> Dict[str, str]:
                 content = await f.read()
                 codebase_dict[relative_path] = content
         except UnicodeDecodeError:
-            print(f"Skipping binary file: {file_path}")
+            logging.info(f"Skipping binary file: {file_path}")
         except Exception as e:
-            print(f"Error reading file {file_path}: {str(e)}")
+            logging.error(f"Error reading file {file_path}: {str(e)}")
 
     tasks = []
     for root, dirs, files in os.walk(repo_path):
