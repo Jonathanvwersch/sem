@@ -49,17 +49,11 @@ export class SearchResultsProvider
 
   private results: Map<string, SearchResultItem[]> = new Map();
 
-  constructor() {
-    console.log("SearchResultsProvider constructed");
-  }
-
   public refresh(): void {
-    console.log("Refreshing SearchResultsProvider");
     this._onDidChangeTreeData.fire();
   }
 
   public updateResults(results: any[]): void {
-    console.log("Updating results:", results);
     this.results.clear();
     results.forEach((result) => {
       if (!this.results.has(result.file_path)) {
@@ -78,7 +72,6 @@ export class SearchResultsProvider
           )
         );
     });
-    console.log("Results updated:", this.results);
     this.refresh();
   }
 
@@ -87,12 +80,9 @@ export class SearchResultsProvider
   }
 
   getChildren(element?: SearchResultItem): Thenable<SearchResultItem[]> {
-    console.log("getChildren called", element ? element.label : "root");
-
     if (!element) {
       const items = Array.from(this.results.entries()).map(
         ([filePath, items]) => {
-          console.log(`Creating root item for ${filePath}`);
           return new SearchResultItem(
             path.basename(filePath),
             vscode.TreeItemCollapsibleState.Expanded,
@@ -103,13 +93,11 @@ export class SearchResultsProvider
           );
         }
       );
-      console.log("Root items:", items);
       return Promise.resolve(items);
     } else if (
       element.collapsibleState === vscode.TreeItemCollapsibleState.Expanded
     ) {
       const children = this.results.get(element.filePath) || [];
-      console.log("Children for", element.label, ":", children);
       return Promise.resolve(children);
     }
     return Promise.resolve([]);

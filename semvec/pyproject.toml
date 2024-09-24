@@ -32,8 +32,5 @@ nltk = "^3.9.1"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry.config]
-virtualenvs.in-project = true
-
 [tool.poetry.scripts]
 start = "core.main:main"

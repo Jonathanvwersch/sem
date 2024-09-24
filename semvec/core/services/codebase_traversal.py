@@ -221,18 +221,34 @@ DEFAULT_IGNORE_PATTERNS = [
 
 
 def normalize_path(path: str) -> str:
-    # Normalize separators
+    """
+    Normalize a file path for consistent processing.
+
+    Args:
+        path (str): The path to normalize.
+
+    Returns:
+        str: The normalized path.
+    """
     path = path.replace(os.sep, "/")
-    # Remove leading './' if present
     if path.startswith("./"):
         path = path[2:]
-    # Ensure no trailing slash (except for root '/')
     if path != "/" and path.endswith("/"):
         path = path[:-1]
     return path
 
 
 def parse_gitignore(repo_path: str, base_path: str = "") -> List[str]:
+    """
+    Parse the .gitignore file in the given repository path.
+
+    Args:
+        repo_path (str): The path to the repository.
+        base_path (str): The base path to prepend to the patterns.
+
+    Returns:
+        List[str]: A list of normalized ignore patterns.
+    """
     gitignore_path = os.path.join(repo_path, ".gitignore")
     if not os.path.exists(gitignore_path):
         return []
@@ -246,21 +262,46 @@ def parse_gitignore(repo_path: str, base_path: str = "") -> List[str]:
 
 
 def should_ignore(path: str, ignore_patterns: List[str], repo_path: str) -> bool:
-    # Ensure the path is relative
+    """
+    Determine if a given path should be ignored based on the ignore patterns.
+
+    Args:
+        path (str): The path to check.
+        ignore_patterns (List[str]): List of ignore patterns.
+        repo_path (str): The base path of the repository.
+
+    Returns:
+        bool: True if the path should be ignored, False otherwise.
+    """
     if os.path.isabs(path):
         path = os.path.relpath(path, repo_path)
-    # Normalize the path cause gitmatch is annoying and very defensive
     path = normalize_path(path)
     matcher = gitmatch.compile(ignore_patterns)
     return bool(matcher.match(path))
 
 
 async def traverse_codebase_from_path(repo_path: str) -> Dict[str, str]:
+    """
+    Asynchronously traverse a codebase and read the contents of all files.
+
+    Args:
+        repo_path (str): The path to the repository to traverse.
+
+    Returns:
+        Dict[str, str]: A dictionary where keys are relative file paths and values are file contents.
+    """
     codebase_dict = {}
     ignore_patterns = [normalize_path(p) for p in DEFAULT_IGNORE_PATTERNS]
     ignore_patterns.extend(parse_gitignore(repo_path))
 
     async def process_file(file_path: str, relative_path: str):
+        """
+        Process a single file: read its contents if it's not ignored.
+
+        Args:
+            file_path (str): The absolute path to the file.
+            relative_path (str): The path of the file relative to the repo root.
+        """
         if should_ignore(relative_path, ignore_patterns, repo_path):
             return
         try:
@@ -275,7 +316,7 @@ async def traverse_codebase_from_path(repo_path: str) -> Dict[str, str]:
     tasks = []
     for root, dirs, files in os.walk(repo_path):
         relative_root = os.path.relpath(root, repo_path)
-        # This will filter out ignored directories from the for loop
+        # Filter out ignored directories
         dirs[:] = [
             d
             for d in dirs

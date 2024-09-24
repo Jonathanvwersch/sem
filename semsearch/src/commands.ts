@@ -46,6 +46,10 @@ export class Commands {
               repoPath,
             ]);
 
+            pythonProcess.stderr.on("data", (data) => {
+              console.error(`stderr: ${data}`);
+            });
+
             pythonProcess.on("close", (code) => {
               if (code === 0) {
                 resolve();
@@ -94,6 +98,7 @@ export class Commands {
         async () => {
           return new Promise<void>((resolve, reject) => {
             let jsonOutput = "";
+            let isCapturingJson = false;
             let errorLogs = "";
 
             const pythonProcess = spawn(
@@ -110,7 +115,28 @@ export class Commands {
             );
 
             pythonProcess.stdout.on("data", (data) => {
-              jsonOutput += data.toString();
+              const lines = data.toString().split("\n");
+
+              for (const line of lines) {
+                if (line.trim() === "START_JSON_OUTPUT") {
+                  isCapturingJson = true;
+                  jsonOutput = "";
+                } else if (line.trim() === "END_JSON_OUTPUT") {
+                  isCapturingJson = false;
+                  try {
+                    const result = JSON.parse(jsonOutput);
+                    if (result.status === "error") {
+                      reject(new Error(result.message));
+                    } else {
+                      resolve(result);
+                    }
+                  } catch (error) {
+                    reject(new Error("Failed to parse JSON output"));
+                  }
+                } else if (isCapturingJson) {
+                  jsonOutput += line;
+                }
+              }
             });
 
             pythonProcess.stderr.on("data", (data) => {
