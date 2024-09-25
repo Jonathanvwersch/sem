@@ -39,7 +39,7 @@ async def main():
         elif args.action == "query":
             if not args.query:
                 raise ValueError("Please provide a query using the --query argument")
-            results = query_codebase(args.query, args.path)
+            results = await query_codebase(args.query, args.path)
             output_json(results)
         else:
             raise ValueError("Invalid action. Use 'index' or 'query'.")

@@ -2,8 +2,8 @@ import sys
 import logging
 import os
 from typing import List, Dict
+from services import index_repository
 from services import FAISSRetrievalSystem
-from models import CodeLocation
 
 # Configure logging to use stderr
 logging.basicConfig(
@@ -13,7 +13,7 @@ logging.basicConfig(
 )
 
 
-def query_codebase(
+async def query_codebase(
     query: str, repo_path: str, top_k: int = 5, similarity_threshold: float = 0.1
 ) -> List[Dict]:
     """
@@ -38,6 +38,14 @@ def query_codebase(
         repo_identifier = os.path.basename(repo_path)
         logging.info(f"Querying codebase: {repo_identifier}")
         retrieval_system = FAISSRetrievalSystem()
+        does_index_exist = retrieval_system.check_index_exists(repo_identifier)
+
+        logging.info(f"Index exists: {does_index_exist} in {repo_identifier}")
+
+        if not does_index_exist:
+            logging.info(f"Creating index for repository: {repo_identifier}")
+            await index_repository(repo_path)
+
         results = retrieval_system.query_index(
             repo_identifier, query, top_k, similarity_threshold
         )
